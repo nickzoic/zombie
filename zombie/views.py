@@ -21,7 +21,8 @@ class View:
             try:
                 view_obj = sessions[session_id]
             except KeyError:
-                return "alert('Session Expired'); window.url = " + repr(bottle.request.path)
+                # Reset browser state by reloading page
+                return "alert('Session Expired'); document.location = " + repr(bottle.request.path)
 
             return view_obj.event(
                 number = bottle.request.params.get('n', 0),
@@ -32,12 +33,11 @@ class View:
             return "Method Not Allowed"
 
     def __init__(self):
-        self.events = { 0 : self.load }
+        self.events = [ self.load ]
 
     def add_event(self, name, callback):
-        # XXX id(callback) gives id of object so only one event per component
-        self.events[id(callback)] = callback
-        return "return Z(%s,this.value)" % id(callback)
+        self.events.append(callback)
+        return "return Z(%s,this.value)" % (len(self.events) - 1)
 
     def event(self, number=None, value=None):
         return self.events[int(number)](value)

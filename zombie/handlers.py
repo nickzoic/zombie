@@ -13,11 +13,11 @@ def loader_js(path, session=""):
   function Z (n, v) {
     var xhr = new XMLHttpRequest();
     xhr.onload = function () {
-      (new Function('Z', xhr.responseText))(Z);
+      if (xhr.responseText) (new Function('Z', xhr.responseText))(Z);
     };
     xhr.open("POST", %s);
     xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-    xhr.send('s=%s&n='+ (n || 0) + '&v=' + (v || ''));
+    xhr.send('s=%s&n=' + (n || 0) + '&v=' + encodeURIComponent(v || ''));
     return false;
   }
   Z();

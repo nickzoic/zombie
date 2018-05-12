@@ -3,6 +3,8 @@ Composable components used in views
 
 """
 
+import html.escape
+
 events = ('onchange', 'onclick')
 
 
@@ -23,14 +25,16 @@ class Element(Component):
         self.attributes = kwargs
     
     def render(self, view):
-
+        # XXX calling add_event hidden away in there isn't cool.
         return ''.join(
             [ "<%s" % self._tag ] +
-            [ " %s=%s" % (k, repr(v)) for k, v in self.attributes.items() ] +
-            [ ' %s=%s' % (e, repr(view.add_event(e, getattr(self,e)))) for e in events if hasattr(self,e) ] +
+            [ ' %s="%s"' % (k, html.escape(v, quote=True))
+                for k, v in self.attributes.items() ] +
+            [ ' %s="%s"' % (e, html.escape((view.add_event(e, getattr(self,e))), quote=True)
+                for e in events if hasattr(self,e) ] +
             [ '>' ] +
             [ c.render(view) for c in self.children ] +
-            [ "</%s>" % self._tag ]
+            [ "</%s>\n" % self._tag ]
         )
 
 
@@ -40,7 +44,7 @@ class TextElement(Component):
         self._text = text
 
     def render(self, view=None):
-        return self._text  # XXX html escape this
+        return html.escape(self._text, quote=False)
 
 
 class ChangeableElement(Element):
@@ -59,6 +63,13 @@ class TextField(ChangeableElement):
         if value: 
             self._value = value
             self.attributes['value'] = value
+
+
+class SlugField(TextField):
+    
+    def onchange(self, value):
+        new_value = re.sub("[^A-Za-z0-9]+", "")
+        super().onchange(self, new_value)
 
 
 class ClickableElement(Element):

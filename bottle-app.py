@@ -1,6 +1,7 @@
 import bottle
 import zombie
 
+
 class MyForm(zombie.components.Form):
 
     def __init__(self, onsubmit):

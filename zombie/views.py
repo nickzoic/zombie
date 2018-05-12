@@ -1,42 +1,6 @@
-import secrets
-
-# XXX use a less terrible way of building the POST parameters
-
-def loader_js(path, session=""):
-    return """
-  function Z (n, v) {
-    var xhr = new XMLHttpRequest();
-    xhr.onload = function () {
-      (new Function('Z', xhr.responseText))(Z);
-    };
-    xhr.open("POST", %s);
-    xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-    xhr.send('s=%s&n='+ (n || 0) + '&v=' + (v || ''));
-  }
-  Z();
-""" % (repr(path), session)
-
-loader_html = "<!DOCTYPE html><html><head><script>%s</script></head><body></body></html>"
-
-# XXX need a session eviction policy ... probably just some kind of timeout
-
-sessions = {}
-
-class Element:
-
-    def __init__(self, tag, text, onclick=None, onchange=None):
-        self._tag = tag
-        self._text = text
-        self._onclick = onclick
-
-    def to_html(self):
-        return "<%s%s>%s</%s>" % (
-            self._tag,
-            ' onclick="Z(%s)"' % id(self) if self._onclick else '',
-            self._text,
-            self._tag
-        )
-
+"""
+Zombie pages and their behaviours.
+"""
 
 class View:
 

@@ -18,6 +18,7 @@ def loader_js(path, session=""):
     xhr.open("POST", %s);
     xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
     xhr.send('s=%s&n='+ (n || 0) + '&v=' + (v || ''));
+    return false;
   }
   Z();
 """ % (repr(path), session)

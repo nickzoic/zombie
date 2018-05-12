@@ -34,11 +34,16 @@ class View:
     def __init__(self):
         self.events = { 0 : self.load }
 
+    def add_event(self, name, callback):
+        # XXX id(callback) gives id of object so only one event per component
+        self.events[id(callback)] = callback
+        return "return Z(%s,this.value)" % id(callback)
+
     def event(self, number=None, value=None):
         return self.events[int(number)](value)
 
     def set(self, selector, element):
-        if element._onclick: self.events[id(element)] = element._onclick
+        if hasattr(element, 'onclick'): self.events[id(element)] = element.onclick
 
         if selector.startswith('#'):
             getter = "getElementById(%s)" % repr(selector[1:])
@@ -47,6 +52,6 @@ class View:
         else:
             getter = "getElementsByTagName(%s)[0]" % repr(selector)
 
-        return "document.%s.innerHTML = %s" % (getter, repr(element.to_html()))
+        return "document.%s.innerHTML = %s" % (getter, repr(element.render(self)))
 
 

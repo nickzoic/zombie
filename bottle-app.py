@@ -4,15 +4,9 @@ import zombie
 
 class MyForm(zombie.components.Form):
 
-    def __init__(self, onsubmit):
-        super().__init__()
-        self.children = [
-            zombie.components.TextField('name'),
-            zombie.components.TextField('email'),
-            zombie.components.TextField('postcode')
-        ]
-        self.postinit()
-        self._onsubmit = onsubmit
+    name = zombie.components.TextField()
+    email = zombie.components.TextField()
+    postcode = zombie.components.TextField()
 
     def onsubmit(self, value=None):
         return self._onsubmit()
@@ -21,7 +15,8 @@ class MyForm(zombie.components.Form):
 class MyView(zombie.views.View):
 
     def load(self, value=None):
-        my_form = MyForm(self.clicky)
+        my_form = MyForm()
+        my_form._onsubmit = self.clicky
         return self.set('body', my_form)
 
     def clicky(self, value=None):

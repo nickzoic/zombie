@@ -3,25 +3,34 @@ Composable components used in views
 
 """
 
-import html.escape
+import html
 
 events = ('onchange', 'onclick')
 
 
 class Component:
     """Base class for components"""    
-    pass
+   
+    children = []
+
+    def __new__(cls, *args, **kwargs):
+        obj = object.__new__(cls)
+        obj.children = cls.children[:]
+        for n, c in cls.__dict__.items():
+            if isinstance(c, Component):
+                c.attributes['name'] = n
+                obj.children.append(c)
+        return obj
 
 
 class Element(Component):
     """A component which renders as an HTML element"""
 
-    children = []
     attributes = {}
 
     def __init__(self, tag, *args, **kwargs):
         self._tag = tag
-        self.children = list(args)
+        self.children += list(args)
         self.attributes = kwargs
     
     def render(self, view):
@@ -30,7 +39,7 @@ class Element(Component):
             [ "<%s" % self._tag ] +
             [ ' %s="%s"' % (k, html.escape(v, quote=True))
                 for k, v in self.attributes.items() ] +
-            [ ' %s="%s"' % (e, html.escape((view.add_event(e, getattr(self,e))), quote=True)
+            [ ' %s="%s"' % (e, html.escape((view.add_event(e, getattr(self,e))), quote=True))
                 for e in events if hasattr(self,e) ] +
             [ '>' ] +
             [ c.render(view) for c in self.children ] +
@@ -91,7 +100,6 @@ class Form(Element):
     def __init__(self, *args, **kwargs):
         super().__init__('form', *args, **kwargs)
 
-    def postinit(self):
         try:
             submit_button = [c for c in self.children[::-1] if isinstance(c, Button)][0]
         except IndexError:

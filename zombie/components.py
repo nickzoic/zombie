@@ -4,6 +4,7 @@ Composable components used in views
 """
 
 import html
+import copy
 
 events = ('onchange', 'onclick')
 
@@ -12,27 +13,38 @@ class Component:
     """Base class for components"""    
    
     children = []
+    attributes = {}
 
     def __new__(cls, *args, **kwargs):
+        """If the class has declared children, pre-initialize the instance
+        with *copies* of the children, so that they can be mutable.  This
+        lets you declare forms with fields conveniently in the class 
+        definition without having to have a more complicated factory-like
+        setup"""
         obj = object.__new__(cls)
         obj.children = cls.children[:]
-        for n, c in cls.__dict__.items():
-            if isinstance(c, Component):
-                c.attributes['name'] = n
-                obj.children.append(c)
+        for child_name, cls_child in cls.__dict__.items():
+            if isinstance(cls_child, Component):
+                obj_child = copy.deepcopy(cls_child)
+                # XXX is this needed?
+                obj_child.attributes.setdefault('name', child_name)
+                obj.children.append(obj_child)
         return obj
 
 
 class Element(Component):
     """A component which renders as an HTML element"""
 
-    attributes = {}
-
     def __init__(self, tag, *args, **kwargs):
         self._tag = tag
         self.children += list(args)
         self.attributes = kwargs
-    
+  
+    def receive_event(self, event):
+        if event.target:
+            for target, message in self.children[event.target[0]].receive_event(event):
+                yield ([event.target[0]] + target, message)
+
     def render(self, view):
         # XXX calling add_event hidden away in there isn't cool.
         return ''.join(

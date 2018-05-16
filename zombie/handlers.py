@@ -1,12 +1,14 @@
 try:
-    from secrets import token_hex
+    import secrets
+    def get_token():
+        """Get a 80-bit random token as a hex string"""
+        return secrets.token_hex(20)
 except ImportError:
-    def token_hex(n_digits):
-        """Polyfill for Python 3.6's secrets.token_hex"""
+    def get_token():
+        """Get a 80-bit random token as a hex string"""
         from Crypto.Random.random import rand_bits
-        return ("%%0%dx" % n_digits) % rand_bits(8 * n_digits)
+        return "%020x" % rand_bits(80)
 
-# XXX use a less terrible way of building the POST parameters
 
 def loader_js(path, session=""):
     return """
@@ -26,15 +28,17 @@ def loader_js(path, session=""):
 loader_html = "<!DOCTYPE html><html><head><script>%s</script></head><body></body></html>"
 
 # XXX need a session eviction policy ... probably just some kind of timeout
+# XXX this is very simple and doesn't allow for multiple BFF servers: a mechanism
+#     to pin a session to a BFF server would be nice.
 
 sessions = {}
 
 def bottle_handler(view_class):
     import bottle
-    
+
     def handler():
         if bottle.request.method == 'GET':
-            session_id = token_hex(16)
+            session_id = get_token()
             sessions[session_id] = view_class()
             return loader_html % (loader_js(bottle.request.path, session_id))
         elif bottle.request.method == 'POST':

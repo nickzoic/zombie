@@ -75,6 +75,9 @@ class ChangeableElement(Element):
     def onchange(self, value):
         self._value = value
 
+    def value(self):
+        return self._value
+
 
 class TextField(ChangeableElement):
 

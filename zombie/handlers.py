@@ -25,7 +25,7 @@ def loader_js(path, session=""):
   Z();
 """ % (repr(path), session)
 
-loader_html = "<!DOCTYPE html><html><head><script>%s</script></head><body></body></html>"
+loader_html = "<!DOCTYPE html><html><head><style></style><script>%s</script></head><body></body></html>"
 
 # XXX need a session eviction policy ... probably just some kind of timeout
 # XXX this is very simple and doesn't allow for multiple BFF servers: a mechanism

@@ -4,8 +4,10 @@ import zombie
 
 class MyForm(zombie.components.Form):
 
-    name = zombie.components.TextField()
-    email = zombie.components.RegexTextField(regex=r'.*@.*\..*')
+    style = zombie.components.Element('style', zombie.components.TextElement(".required { border: solid orange } .valid { border: solid green }"))
+
+    name = zombie.components.TextField(required=True)
+    email = zombie.components.RegexTextField(regex=r'.*@.*\..*', required=True)
     postcode = zombie.components.TextField()
 
     def onsubmit(self, value=None):

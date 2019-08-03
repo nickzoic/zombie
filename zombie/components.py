@@ -11,7 +11,8 @@ events = ('onchange', 'onclick')
 
 class Component:
     """Base class for components"""    
-   
+  
+    parent = None
     children = []
     attributes = {}
 
@@ -23,12 +24,17 @@ class Component:
         setup"""
         obj = object.__new__(cls)
         obj.children = cls.children[:]
+
+        print("Creating %s %s" % (cls.__name__, obj))
+
         for child_name, cls_child in cls.__dict__.items():
             if isinstance(cls_child, Component):
                 obj_child = copy.deepcopy(cls_child)
-                # XXX is this needed?
+                obj_child.parent = obj
                 obj_child.attributes.setdefault('name', child_name)
                 obj.children.append(obj_child)
+                setattr(obj, child_name, obj_child)
+
         return obj
 
 
@@ -71,6 +77,16 @@ class TextElement(Component):
 class ChangeableElement(Element):
 
     _value = None
+    inputs = []
+
+    def __init__(self, *args, **kwargs):
+        self.required = False
+        if 'required' in kwargs:
+            if kwargs['required']: self.required = True 
+            del kwargs['required']
+        super().__init__(*args, **kwargs)
+        if self.required:
+            self.attributes['oninput'] = 'this.classList.toggle("required", this.value.length == 0)'
 
     def onchange(self, value):
         self._value = value
@@ -87,6 +103,19 @@ class TextField(ChangeableElement):
         if value: 
             self._value = value
             self.attributes['value'] = value
+
+
+class RegexTextField(TextField):
+
+    def __init__(self, name=None, regex=None, *args, **kwargs):
+        super().__init__(name, *args, **kwargs)
+        if regex:
+            self._regex = regex
+            if self.required:
+
+                self.attributes['oninput'] += ';this.classList.toggle("valid", this.value.length > 0 && this.value.match(%s))' % repr(regex)
+            else:
+                self.attributes['oninput'] = 'this.classList.toggle("valid", this.value.match(%s))' % repr(regex)
 
 
 class SlugField(TextField):

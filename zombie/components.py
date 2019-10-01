@@ -6,6 +6,10 @@ Composable components used in views
 import html
 import copy
 
+# XXX have to somehow differentiate between local events (which just do javascripty
+# things on the frontend) and remote events which call the Z() function
+
+
 events = ('onchange', 'onclick')
 
 
@@ -65,6 +69,14 @@ class Element(Component):
         )
 
 
+class ScriptElement(Component):
+    def __init__(self, code):
+        self._code = code
+
+    def render(self, view):
+        self._name = view.add_function
+
+
 class TextElement(Component):
 
     def __init__(self, text):
@@ -86,7 +98,8 @@ class ChangeableElement(Element):
             del kwargs['required']
         super().__init__(*args, **kwargs)
         if self.required:
-            self.attributes['oninput'] = 'this.classList.toggle("required", this.value.length == 0)'
+            self.attributes['oninput'] = 'this.classList.toggle("required", !this.value)'
+            self.attributes['onfocus'] = 'this.classList.toggle("required", !this.value)'
 
     def onchange(self, value):
         self._value = value
@@ -113,9 +126,11 @@ class RegexTextField(TextField):
             self._regex = regex
             if self.required:
 
-                self.attributes['oninput'] += ';this.classList.toggle("valid", this.value.length > 0 && this.value.match(%s))' % repr(regex)
+                self.attributes['oninput'] += ';this.classList.toggle("invalid", this.value.length > 0 && !this.value.match(%s))' % repr(regex)
+                self.attributes['onfocus'] += ';this.classList.toggle("invalid", this.value.length > 0 && !this.value.match(%s))' % repr(regex)
             else:
-                self.attributes['oninput'] = 'this.classList.toggle("valid", this.value.match(%s))' % repr(regex)
+                self.attributes['oninput'] = 'this.classList.toggle("invalid", !this.value.match(%s))' % repr(regex)
+                self.attributes['onfocus'] = 'this.classList.toggle("invalid", !this.value.match(%s))' % repr(regex)
 
 
 class SlugField(TextField):

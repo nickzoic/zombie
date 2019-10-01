@@ -74,7 +74,7 @@ def bottle_handler(view_class):
                 view_obj = sessions[session_id]
             except KeyError:
                 # pop a browser alert up, and then have the browser reload the page.
-                return "alert('Session Expired'); window.url = " + repr(bottle.request.path)
+                return "alert('Session Expired'); window.location = " + repr(bottle.request.path)
     
             return view_obj.event(
                 number = bottle.request.params.get('n', 0),

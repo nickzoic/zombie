@@ -6,12 +6,15 @@ class MyForm(zombie.components.Form):
 
     # need a better way to do styles
     style = zombie.components.Element('style', zombie.components.TextElement("input { border: solid green } input.required { border: solid orange } input.invalid { border: solid red }"))
+   
+    greeting = zombie.components.TextElement("Hello, Zombies!")
 
     name = zombie.components.TextField(required=True)
     email = zombie.components.RegexTextField(regex=r'.*@.*\..*', required=True)
     postcode = zombie.components.TextField(regex=r'\d{4}', required=False)
 
     def onsubmit(self, value=None):
+        print("MyForm onsubmit")
         return self._onsubmit()
 
 

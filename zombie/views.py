@@ -5,13 +5,13 @@ Zombie pages and their behaviours.
 class View:
 
     def __init__(self):
-        self.events = [ self.load ]
+        self.events = { 0: self.load }
 
-    def add_event(self, name, callback):
-        self.events.append(callback)
-        return "return Z(%s,this.value)" % (len(self.events) - 1)
+    def register(self, event_id, event_handler):
+        self.events[int(event_id)] = event_handler
 
     def event(self, number=None, value=None):
+        print("View.event %s %s" % (number, repr(value)))
         return self.events[int(number)](value)
 
     def set(self, selector, element):

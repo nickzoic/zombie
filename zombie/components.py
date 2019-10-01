@@ -18,7 +18,8 @@ class Component:
   
     parent = None
     children = []
-    attributes = {}
+
+    _id_counter = 0
 
     def __new__(cls, *args, **kwargs):
         """If the class has declared children, pre-initialize the instance
@@ -28,14 +29,15 @@ class Component:
         setup"""
         obj = object.__new__(cls)
         obj.children = cls.children[:]
-
+        
         print("Creating %s %s" % (cls.__name__, obj))
 
         for child_name, cls_child in cls.__dict__.items():
             if isinstance(cls_child, Component):
                 obj_child = copy.deepcopy(cls_child)
                 obj_child.parent = obj
-                obj_child.attributes.setdefault('name', child_name)
+                if hasattr(obj_child, 'attributes'):
+                    obj_child.attributes.setdefault('name', child_name)
                 obj.children.append(obj_child)
                 setattr(obj, child_name, obj_child)
 
@@ -56,12 +58,16 @@ class Element(Component):
                 yield ([event.target[0]] + target, message)
 
     def render(self, view):
-        # XXX calling add_event hidden away in there isn't cool.
+        
+        for e in events:
+            if hasattr(self, e):
+                view.register(self.attributes.get('id', 0), getattr(self, e))
+
         return ''.join(
             [ "<%s" % self._tag ] +
             [ ' %s="%s"' % (k, html.escape(v, quote=True))
                 for k, v in self.attributes.items() ] +
-            [ ' %s="%s"' % (e, html.escape((view.add_event(e, getattr(self,e))), quote=True))
+            [ ' %s="%s"' % (e, "return Z(this.id,this.value)")
                 for e in events if hasattr(self,e) ] +
             [ '>' ] +
             [ c.render(view) for c in self.children ] +
@@ -86,7 +92,16 @@ class TextElement(Component):
         return html.escape(self._text, quote=False)
 
 
-class ChangeableElement(Element):
+class ActiveElement(Element):
+    """A component which can be rendered as HTML and can receive events."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        Component._id_counter += 1
+        self.attributes['id'] = str(Component._id_counter)
+        
+
+class ChangeableElement(ActiveElement):
 
     _value = None
     inputs = []
@@ -140,7 +155,7 @@ class SlugField(TextField):
         super().onchange(self, new_value)
 
 
-class ClickableElement(Element):
+class ClickableElement(ActiveElement):
 
     def onclick(self):
         pass
@@ -154,7 +169,7 @@ class Button(ClickableElement):
             self.children = [ TextElement(label) ]
    
 
-class Form(Element):
+class Form(ActiveElement):
 
     def __init__(self, *args, **kwargs):
         super().__init__('form', *args, **kwargs)

@@ -7,7 +7,7 @@ setup(
   url='http://github.com/nickzoic/zombie/',
   author='Nick Moore',
   author_email='nick@zoic.org',
-  license="MIT",
+  license="LGPLv2",
   packages=["zombie"],
   install_requires=[
   ],
@@ -19,7 +19,7 @@ setup(
     'Development Status :: 3 - Alpha',
     'Environment :: Console',
     'Intended Audience :: Developers',
-    'License :: OSI Approved :: MIT License',
+    'License :: OSI Approved :: GNU Lesser General Public License v2 (LGPLv2)',
     'Programming Language :: Python :: 3 :: Only',
   ],
 )

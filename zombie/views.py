@@ -4,46 +4,18 @@ Zombie pages and their behaviours.
 
 class View:
 
-    # XXX this should probably be a separate zombie.bottle.handler 
-    # XXX this is very simple and doesn't allow for multiple BFF servers: a mechanism
-    #     to pin a session to a BFF server would be nice.
-
-    @classmethod
-    def bottle_handler(cls):
-        import bottle
-        global sessions
-        if bottle.request.method == 'GET':
-            session_id = secrets.token_hex(16)
-            sessions[session_id] = cls()
-            return loader_html % (loader_js(bottle.request.path, session_id))
-        elif bottle.request.method == 'POST':
-            session_id = bottle.request.params.get('s')
-            try:
-                view_obj = sessions[session_id]
-            except KeyError:
-                # Reset browser state by reloading page
-                return "alert('Session Expired'); document.location = " + repr(bottle.request.path)
-
-            return view_obj.event(
-                number = bottle.request.params.get('n', 0),
-                value = bottle.request.params.get('v')
-            )
-        else:
-            bottle.response = 405
-            return "Method Not Allowed"
-
     def __init__(self):
-        self.events = [ self.load ]
+        self.events = { 0: self.load }
 
-    def add_event(self, name, callback):
-        self.events.append(callback)
-        return "return Z(%s,this.value)" % (len(self.events) - 1)
+    def load(self):
+        pass
 
-    def event(self, number=None, value=None):
+    def event(self, number=0, value=None):
         return self.events[int(number)](value)
 
     def set(self, selector, element):
-        if hasattr(element, 'onclick'): self.events[id(element)] = element.onclick
+        self.events.update(element.identities())
+        #if hasattr(element, 'onclick'): self.events[id(element)] = element.onclick
 
         if selector.startswith('#'):
             getter = "getElementById(%s)" % repr(selector[1:])
@@ -52,6 +24,6 @@ class View:
         else:
             getter = "getElementsByTagName(%s)[0]" % repr(selector)
 
-        return "document.%s.innerHTML = %s" % (getter, repr(element.render(self)))
+        return "document.%s.innerHTML = %s" % (getter, repr(element.render()))
 
 

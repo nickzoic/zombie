@@ -14,8 +14,12 @@ class View:
         print("View.event %s %s" % (number, repr(value)))
         return self.events[int(number)](value)
 
+    def load(self):
+        pass
+
     def set(self, selector, element):
-        if hasattr(element, 'onclick'): self.events[id(element)] = element.onclick
+        self.events.update(element.identities())
+        #if hasattr(element, 'onclick'): self.events[id(element)] = element.onclick
 
         if selector.startswith('#'):
             getter = "getElementById(%s)" % repr(selector[1:])
@@ -24,6 +28,6 @@ class View:
         else:
             getter = "getElementsByTagName(%s)[0]" % repr(selector)
 
-        return "document.%s.innerHTML = %s" % (getter, repr(element.render(self)))
+        return "document.%s.innerHTML = %s" % (getter, repr(element.render()))
 
 

@@ -28,49 +28,48 @@ class Component:
         definition without having to have a more complicated factory-like
         setup"""
         obj = object.__new__(cls)
-        obj.children = cls.children[:]
-        
         print("Creating %s %s" % (cls.__name__, obj))
+        obj._children = []
+        Component._id_counter += 1
+        obj._attributes = { "id": Component._id_counter }
 
         for child_name, cls_child in cls.__dict__.items():
             if isinstance(cls_child, Component):
                 obj_child = copy.deepcopy(cls_child)
                 obj_child.parent = obj
-                if hasattr(obj_child, 'attributes'):
-                    obj_child.attributes.setdefault('name', child_name)
-                obj.children.append(obj_child)
                 setattr(obj, child_name, obj_child)
+                obj_child._attributes.setdefault('name', child_name)
+                obj._children.append(obj_child)
 
         return obj
 
 
 class Element(Component):
-    """A component which renders as an HTML element"""
+    """A component which renders as an HTML element, and can contain other
+    Components."""
 
     def __init__(self, tag, *args, **kwargs):
         self._tag = tag
-        self.children += list(args)
-        self.attributes = kwargs
-  
-    def receive_event(self, event):
+        self._children += list(args)
+        self._attributes.update(kwargs)
+        self._attributes.update([(e, "return Z(this.id,this.value)") for e in events if hasattr(self, e)])
+
+    def recv(self, event):
         if event.target:
-            for target, message in self.children[event.target[0]].receive_event(event):
+            for target, message in self._children[event.target[0]].recv(event):
                 yield ([event.target[0]] + target, message)
 
-    def render(self, view):
-        
-        for e in events:
-            if hasattr(self, e):
-                view.register(self.attributes.get('id', 0), getattr(self, e))
+    def identities(self):
+        yield (self._attributes['id'], self.recv)
+        for c in self._children:
+            yield from c.identities()
 
+    def render(self):
         return ''.join(
             [ "<%s" % self._tag ] +
-            [ ' %s="%s"' % (k, html.escape(v, quote=True))
-                for k, v in self.attributes.items() ] +
-            [ ' %s="%s"' % (e, "return Z(this.id,this.value)")
-                for e in events if hasattr(self,e) ] +
+            [ ' %s="%s"' % (k, html.escape(str(v), quote=True)) for k, v in self._attributes.items() ] +
             [ '>' ] +
-            [ c.render(view) for c in self.children ] +
+            [ c.render() for c in self._children ] +
             [ "</%s>\n" % self._tag ]
         )
 
@@ -84,6 +83,7 @@ class ScriptElement(Component):
 
 
 class TextElement(Component):
+    """A piece of text in HTML: not an Element itself but contained by Elements"""
 
     def __init__(self, text):
         self._text = text
@@ -91,6 +91,11 @@ class TextElement(Component):
     def render(self, view=None):
         return html.escape(self._text, quote=False)
 
+    def recv(self, event):
+        pass
+
+    def identities(self):
+        yield (self._attributes['id'], self.recv)
 
 class ActiveElement(Element):
     """A component which can be rendered as HTML and can receive events."""
@@ -98,7 +103,7 @@ class ActiveElement(Element):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         Component._id_counter += 1
-        self.attributes['id'] = str(Component._id_counter)
+        self._attributes['id'] = str(Component._id_counter)
         
 
 class ChangeableElement(ActiveElement):
@@ -127,10 +132,10 @@ class TextField(ChangeableElement):
 
     def __init__(self, name=None, value='', *args, **kwargs):
         super().__init__('input', *args, type='text', **kwargs)
-        if name: self.attributes['name'] = name
+        if name: self._attributes['name'] = name
         if value: 
             self._value = value
-            self.attributes['value'] = value
+            self._attributes['value'] = value
 
 
 class RegexTextField(TextField):
@@ -166,7 +171,7 @@ class Button(ClickableElement):
     def __init__(self, label=None, *args, **kwargs):
         super().__init__('button', *args, **kwargs)
         if label is not None:
-            self.children = [ TextElement(label) ]
+            self._children = [ TextElement(label) ]
    
 
 class Form(ActiveElement):
@@ -175,10 +180,10 @@ class Form(ActiveElement):
         super().__init__('form', *args, **kwargs)
 
         try:
-            submit_button = [c for c in self.children[::-1] if isinstance(c, Button)][0]
+            submit_button = [c for c in self._children[::-1] if isinstance(c, Button)][0]
         except IndexError:
             submit_button = Button('Submit')
-            self.children.append(submit_button)
+            self._children.append(submit_button)
         submit_button.onclick = self.onsubmit
 
     def onsubmit(self, value=None):
